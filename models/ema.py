@@ -20,14 +20,13 @@ class ModelEMA(object):
         with torch.no_grad():
             msd = model.state_dict()
             esd = self.ema.state_dict()
+
             for k in self.param_keys:
-                if needs_module:
-                    j = 'module.' + k
+                j = ('module.' + k) if needs_module else k
                 model_v = msd[j].detach()
                 ema_v = esd[k]
                 ema_v.copy_(ema_v * self.decay + (1. - self.decay) * model_v)
 
             for k in self.buffer_keys:
-                if needs_module:
-                    j = 'module.' + k
+                j = ('module.' + k) if needs_module else k
                 esd[k].copy_(msd[j])

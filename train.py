@@ -95,7 +95,7 @@ def main():
                         help='weight decay')
     parser.add_argument('--nesterov', action='store_true', default=True,
                         help='use nesterov momentum')
-    parser.add_argument('--use-ema', action='store_true', default=True,
+    parser.add_argument('--use-ema', action='store_true', default=False,
                         help='use EMA model')
     parser.add_argument('--ema-decay', default=0.999, type=float,
                         help='EMA decay rate')
@@ -198,7 +198,7 @@ def main():
             args.model_width = 64
 
     labeled_dataset, unlabeled_dataset, test_dataset = DATASET_GETTERS[args.dataset](
-        args, './data')
+        args, '../data')
 
     train_sampler = RandomSampler if args.local_rank == -1 else DistributedSampler
 
@@ -246,6 +246,7 @@ def main():
     scheduler = get_cosine_schedule_with_warmup(
         optimizer, args.warmup, args.total_steps)
 
+    ema_model = None
     if args.use_ema:
         from models.ema import ModelEMA
         ema_model = ModelEMA(args, model, args.ema_decay)
