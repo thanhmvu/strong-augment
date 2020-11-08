@@ -18,6 +18,8 @@ Improving SSL
 - Hypothesis 3: we can improve SSL by training with appropriate/various levels of unrealisticity of strong augmentation
 
 ## TODO
+- [X] Test run this repo with CIFAR-10
+
 Realisticity Analysis
 - [ ] Integrate OOD detection for measuring "realisiticity" of augmented images e.g. https://arxiv.org/abs/1912.03263 https://arxiv.org/abs/1905.11001
 - [ ] Manually check ODD score and qualitative realisticity of sample augmented images. See **save-aug** branch for the extraction sample augmented images (before normalization)
