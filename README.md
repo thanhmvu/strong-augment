@@ -8,6 +8,25 @@ This is a fork of the FixMatch-Pytorch repo from https://github.com/kekmodel/Fix
 
 Weights and log files are in vision38:/data/tvu/classes/fixMatch-pytorch/results/
 
+
+## Plan
+Realisticity Analysis
+- Hypothesis 1: strongly and weakly augmented images have different realisiticity and we can measure/distinct this using out-of-distribution methods
+- Hypothesis 2: there are variation of realisiticity even among strongly augmented images. e.g. we expect posterization to be more unrealisitic than flip+translate+crop
+
+Improving SSL
+- Hypothesis 3: we can improve SSL by training with appropriate/various levels of unrealisticity of strong augmentation
+
+## TODO
+Realisticity Analysis
+- [ ] Integrate OOD detection for measuring "realisiticity" of augmented images e.g. https://arxiv.org/abs/1912.03263 https://arxiv.org/abs/1905.11001
+- [ ] Manually check ODD score and qualitative realisticity of sample augmented images. See **save-aug** branch for the extraction sample augmented images (before normalization)
+- [ ] Generate/save all augmented variation as use in one epoch of FixMatch
+- [ ] Analysize the ODD scores of this distribution augmented images to test hypotheses 1 and 2
+
+Improving SSL
+- [ ] Train FixMatch with various levels of unrealistic augmentation
+
 ---------------------------------------------
 *(below is the README from the original repo)*
 # FixMatch
