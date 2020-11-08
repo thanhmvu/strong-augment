@@ -1,5 +1,15 @@
-source: https://github.com/kekmodel/FixMatch-pytorch
+# Thanh's Notes
+This is a fork of the FixMatch-Pytorch repo from https://github.com/kekmodel/FixMatch-pytorch
 
+## Prelimminary CIFAR10 Top-1
+| #Labels per class| 10 | 40 | 400 |
+|:---|:---:|:---:|:---:|
+| Thanh's trials | 92.37 | 94.03 | 95.09 |
+
+Weights and log files are in vision38:/data/tvu/classes/fixMatch-pytorch/results/
+
+---------------------------------------------
+*(below is the README from the original repo)*
 # FixMatch
 This is an unofficial PyTorch implementation of [FixMatch: Simplifying Semi-Supervised Learning with Consistency and Confidence](https://arxiv.org/abs/2001.07685).
 The official Tensorflow implementation is [here](https://github.com/google-research/fixmatch).
