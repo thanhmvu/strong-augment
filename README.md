@@ -96,4 +96,4 @@ tensorboard --logdir=<your out_dir>
 ## OOD scores
 | | weakly-aug | strong-aug |
 |:---|:---:|:---:|
-| Cifar10 | 0.6663986479999999 |  | 
+| Cifar10 | 0.6663986479999999 | 0.6668965149999999 | 
