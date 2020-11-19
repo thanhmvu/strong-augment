@@ -21,9 +21,9 @@ Improving SSL
 - [X] Test run this repo with CIFAR-10
 
 Realisticity Analysis
-- [ ] Integrate OOD detection for measuring "realisiticity" of augmented images e.g. https://arxiv.org/abs/1912.03263 https://arxiv.org/abs/1905.11001
-- [ ] Manually check ODD score and qualitative realisticity of sample augmented images. See **save-aug** branch for the extraction sample augmented images (before normalization)
-- [ ] Generate/save all augmented variation as use in one epoch of FixMatch
+- [X] Integrate OOD detection for measuring "realisiticity" of augmented images e.g. https://arxiv.org/abs/1912.03263 https://arxiv.org/abs/1905.11001
+- [X] Manually check ODD score and qualitative realisticity of sample augmented images. See **save-aug** branch for the extraction sample augmented images (before normalization)
+- [X] Generate/save all augmented variation as use in one epoch of FixMatch
 - [ ] Analysize the ODD scores of this distribution augmented images to test hypotheses 1 and 2
 
 Improving SSL
@@ -93,3 +93,7 @@ tensorboard --logdir=<your out_dir>
     year={2020},
 }
 ```
+## OOD scores
+| | weakly-aug | strong-aug |
+|:---|:---:|:---:|
+| Cifar10 | 0.6663986479999999 |  | 
