@@ -221,7 +221,7 @@ def logp_hist(f, args, device):
          lambda x: x + args.sigma * t.randn_like(x)]
     )
     datasets = {
-        "cifar10": tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=False),
+        "cifar10": tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=True),
         "svhn": tv.datasets.SVHN(root="../data", transform=transform_test, download=True, split="test"),
         "cifar100":tv.datasets.CIFAR100(root="../data", transform=transform_test, download=True, train=False),
         # "celeba": tv.datasets.ImageFolder(root="/scratch/gobi1/gwohl/CelebA/splits",
@@ -236,10 +236,10 @@ def logp_hist(f, args, device):
         print(dataset_name)
         if dataset_name == 'cifar10_strong':
             args.num_classes = 10
-            dataset = get_cifar10_strong(args, '../data')
+            dataset = get_cifar10_strong(args, '../data', train=True)
         elif dataset_name == 'cifar10_weak':
             args.num_classes = 10
-            dataset = get_cifar10_weak(args, '../data')
+            dataset = get_cifar10_weak(args, '../data', train=True)
         else:
             dataset = datasets[dataset_name]
         dataloader = DataLoader(dataset, batch_size=100, shuffle=True, num_workers=4, drop_last=False)
@@ -252,7 +252,7 @@ def logp_hist(f, args, device):
         score_dict[dataset_name] = this_scores
 
     for name, scores in score_dict.items():
-        plt.hist(scores, label=name, bins=100, normed=True, range=(-10,4), alpha=1)
+        plt.hist(scores, label=name, bins=100, range=(-10,4), alpha=1)
         # plt.hist(scores, label=name, bins=100, normed=True, alpha=.5)
     plt.legend()
     plt.savefig(args.save_dir + f"/fig_{dataset_name}.pdf")
@@ -274,13 +274,13 @@ def OODAUC(f, args, device):
          lambda x: x + args.sigma * t.randn_like(x)]
     )
 
-    dset_real = tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=False)
+    dset_real = tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=True)
     dload_real = DataLoader(dset_real, batch_size=100, shuffle=False, num_workers=4, drop_last=False)
 
     if args.ood_dataset == "svhn":
         dset_fake = tv.datasets.SVHN(root="../data", transform=transform_test, download=True, split="test")
     elif args.ood_dataset == "cifar_100":
-        dset_fake = tv.datasets.CIFAR100(root="../data", transform=transform_test, download=True, train=False)
+        dset_fake = tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=True)
     # elif args.ood_dataset == "celeba":
     #     dset_fake = tv.datasets.ImageFolder(root="/scratch/gobi1/gwohl/CelebA/splits",
     #                                         transform=tr.Compose([tr.Resize(32),
@@ -289,12 +289,12 @@ def OODAUC(f, args, device):
     #                                                    lambda x: x + args.sigma * t.randn_like(x)]))
     elif args.ood_dataset == "cifar10_weak":
         args.num_classes = 10
-        dset_fake = get_cifar10_strong(args, '../data')
+        dset_fake = get_cifar10_weak(args, '../data', train=True)
     elif args.ood_dataset == 'cifar10_strong':
             args.num_classes = 10
-            dset_fake = get_cifar10_strong(args, '../data')
+            dset_fake = get_cifar10_strong(args, '../data', train=True)
     else:
-        dset_fake = tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=False)
+        dset_fake = tv.datasets.CIFAR10(root="../data", transform=transform_test, download=True, train=True)
 
     dload_fake = DataLoader(dset_fake, batch_size=100, shuffle=True, num_workers=4, drop_last=False)
     print(len(dload_real), len(dload_fake))
@@ -309,11 +309,25 @@ def OODAUC(f, args, device):
         else:
             return -grad_norm(x).detach().cpu()
 
+
+    # # Code to score individual images
+    # from PIL import Image
+    # import glob
+    # image_list = []
+    # for filename in glob.glob('../strong-augment_backup/AugmentedData/sample/weak/0951*.jpg'): #assuming gif
+    #     im=Image.open(filename)
+    #     # image_list.append(im)
+    #     im = tr.functional.to_tensor(im).unsqueeze(0)
+    #     # print(im.shape, type(im))
+    #     print("score", filename, score_fn(im.to(device)).item())
+    # exit()
+
+
     for x, _ in dload_real:
         x = x.to(device)
         scores = score_fn(x)
         real_scores.append(scores.numpy())
-        print(scores.mean())
+        # print(scores.mean())
     fake_scores = []
     print("Fake scores...")
     if args.ood_dataset == "cifar_interp":
@@ -324,14 +338,14 @@ def OODAUC(f, args, device):
                 x_mix = (x + last_batch) / 2 + args.sigma * t.randn_like(x)
                 scores = score_fn(x_mix)
                 fake_scores.append(scores.numpy())
-                print(scores.mean())
+                # print(scores.mean())
             last_batch = x
     else:
         for i, (x, _) in enumerate(dload_fake):
             x = x.to(device)
             scores = score_fn(x)
             fake_scores.append(scores.numpy())
-            print(scores.mean())
+            # print(scores.mean())
     real_scores = np.concatenate(real_scores)
     fake_scores = np.concatenate(fake_scores)
     real_labels = np.ones_like(real_scores)
@@ -340,6 +354,9 @@ def OODAUC(f, args, device):
     scores = np.concatenate([real_scores, fake_scores])
     labels = np.concatenate([real_labels, fake_labels])
     score = sklearn.metrics.roc_auc_score(labels, scores)
+
+    for sc, name in zip([real_scores, fake_scores], ["real_scores", "fake_scores"]):
+        print(name, sc.mean(), sc.max(), sc.min(), sc.std())
     print(score)
 
 
