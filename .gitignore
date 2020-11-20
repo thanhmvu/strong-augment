@@ -1,5 +1,8 @@
 results
 data
+experiments/
+result/
+AugmentedData/
 .vscode
 # Byte-compiled / optimized / DLL files
 __pycache__/

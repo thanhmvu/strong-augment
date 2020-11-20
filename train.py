@@ -222,18 +222,6 @@ def main():
         batch_size=args.batch_size,
         num_workers=args.num_workers)
 
-
-    from torchvision.utils import save_image
-    unlabeled_iter = iter(unlabeled_trainloader)
-    (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
-    print(inputs_u_w.shape, inputs_u_s.shape)
-    for i in range(10):
-        save_image(inputs_u_w[i], 'samples/img%02d_weak.png' % i)
-        save_image(inputs_u_s[i], 'samples/img%02d_strong.png' % i)
-    assert(0)
-
-
-
     if args.local_rank not in [-1, 0]:
         torch.distributed.barrier()
 
