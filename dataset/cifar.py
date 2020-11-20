@@ -122,8 +122,9 @@ class TransformFixMatch(object):
                                   padding_mode='reflect'),
             RandAugmentMC(n=2, m=10)])
         self.normalize = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std)])
+            # transforms.ToTensor(),
+            # transforms.Normalize(mean=mean, std=std)])
+            transforms.ToTensor()])
 
     def __call__(self, x):
         weak = self.weak(x)
