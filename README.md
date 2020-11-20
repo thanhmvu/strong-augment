@@ -1,13 +1,12 @@
-# Thanh's Notes
-This is a fork of the FixMatch-Pytorch repo from https://github.com/kekmodel/FixMatch-pytorch
+# Notes
+- This is a fork of the FixMatch-Pytorch repo from https://github.com/kekmodel/FixMatch-pytorch
+- The **master** branch contains the latest **analysis** code.
+- The **training** branch contains the latest **SSL training** code. 
 
 ## Prelimminary CIFAR10 Top-1
 | #Labels per class| 10 | 40 | 400 |
 |:---|:---:|:---:|:---:|
-| Thanh's trials | 92.37 | 94.03 | 95.09 |
-
-Weights and log files are in vision38:/data/tvu/classes/fixMatch-pytorch/results/
-
+| Accuracy | 92.37 | 94.03 | 95.09 |
 
 ## Plan
 Realisticity Analysis
@@ -94,7 +93,3 @@ tensorboard --logdir=<your out_dir>
     year={2020},
 }
 ```
-## OOD scores
-| | weakly-aug | strong-aug |
-|:---|:---:|:---:|
-| Cifar10 | 0.6663986479999999 | 0.6668965149999999 | 
