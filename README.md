@@ -8,6 +8,7 @@ This is a fork of the FixMatch-Pytorch repo from https://github.com/kekmodel/Fix
 
 Weights and log files are in vision38:/data/tvu/classes/fixMatch-pytorch/results/
 
+<<<<<<< HEAD
 
 ## Plan
 Realisticity Analysis
@@ -30,6 +31,8 @@ Improving SSL
 - [ ] Train FixMatch with various levels of unrealistic augmentation
 
 =======
+=======
+>>>>>>> add ood
 ---------------------------------------------
 *(below is the README from the original repo)*
 # FixMatch

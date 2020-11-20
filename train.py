@@ -16,12 +16,17 @@ from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
+import ood_score
+import pdb
 
-from dataset.cifar import DATASET_GETTERS
+from dataset.cifar import DATASET_GETTERS, TransformFixMatch_fn
 from utils import AverageMeter, accuracy
 
 logger = logging.getLogger(__name__)
 best_acc = 0
+cifar10_mean = (0.4914, 0.4822, 0.4465)
+cifar10_std = (0.2471, 0.2435, 0.2616)
+
 
 
 def save_checkpoint(state, is_best, checkpoint, filename='checkpoint.pth.tar'):
@@ -123,6 +128,17 @@ def main():
     parser.add_argument('--no-progress', action='store_true',
                         help="don't use progress bar")
 
+
+    # =============== added for ood ===============
+    parser.add_argument("--sigma", type=float, default=3e-2)  # regularization
+    parser.add_argument("--score_fn", default="px", type=str,
+                        choices=["px", "py", "pxgrad"], help="For OODAUC, chooses what score function we use.")
+    parser.add_argument("--uncond", action="store_true")
+    parser.add_argument("--width", type=int, default=10)
+    parser.add_argument("--depth", type=int, default=28)
+    parser.add_argument("--norm", type=str, default=None, choices=[None, "norm", "batch", "instance", "layer", "act"])
+    parser.add_argument("--ood_threshold", type=float, default=0)
+
     args = parser.parse_args()
     global best_acc
 
@@ -142,6 +158,17 @@ def main():
         logger.info("Total params: {:.2f}M".format(
             sum(p.numel() for p in model.parameters())/1e6))
         return model
+
+    def setup_ood_model(args):
+        print("Setting up OOD model")
+        model_ood = ood_score.F if args.uncond else ood_score.CCF
+        f = model_ood(args.depth, args.width, args.norm)
+
+
+        ckpt_dict = torch.load('/net/vision29/data/i/dongxu_courses/learning_with_limited_labeled_data/JEM/model/CIFAR10_MODEL.pt')
+        f.load_state_dict(ckpt_dict["model_state_dict"])
+
+        return f
 
     if args.local_rank == -1:
         device = torch.device('cuda', args.gpu_id)
@@ -226,11 +253,13 @@ def main():
         torch.distributed.barrier()
 
     model = create_model(args)
+    ood_model = setup_ood_model(args)
 
     if args.local_rank == 0:
         torch.distributed.barrier()
 
     model.to(args.device)
+    ood_model.to(args.device)
 
     no_decay = ['bias', 'bn']
     grouped_parameters = [
@@ -286,12 +315,19 @@ def main():
     logger.info(f"  Total optimization steps = {args.total_steps}")
 
     model.zero_grad()
+    tf = TransformFixMatch_fn(mean=cifar10_mean, std=cifar10_std)
     train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
-          model, optimizer, ema_model, scheduler, writer)
+          model, ood_model, optimizer, ema_model, scheduler, writer, tf)
 
+def generate_strong_aug(args, img, transform, ood_model):
+    score = args.ood_threshold+1
+    while score>args.ood_threshold:
+        _, img_s = transform(img)
+        score = ood_score.OODAUC(ood_model, img_s.unsqueeze(dim=0), args)
+    return img_s
 
 def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
-          model, optimizer, ema_model, scheduler, writer):
+          model, ood_model, optimizer, ema_model, scheduler, writer, tf):
     if args.amp:
         from apex import amp
     global best_acc
@@ -319,10 +355,46 @@ def train(args, labeled_trainloader, unlabeled_trainloader, test_loader,
                 inputs_x, targets_x = labeled_iter.next()
 
             try:
-                (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
+                img, (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
             except:
                 unlabeled_iter = iter(unlabeled_trainloader)
-                (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
+                img, (inputs_u_w, inputs_u_s), _ = unlabeled_iter.next()
+
+            # # ===== OOD
+            # strong_augs = []
+            # weak_augs = []
+            # num = 0
+            # while True:
+            #     scores = ood_score.OODAUC(ood_model, inputs_u_s, args)
+            #     ood_mask = scores.ge(args.ood_threshold)  # 448
+            #     pdb.set_trace()
+            #     inds = torch.arange(0, ood_mask.shape[0]).masked_select(ood_mask)
+            #     inputs_s = inputs_u_s[inds]
+            #     inputs_w = inputs_u_w[inds]
+            #     num += inds.shape[0]
+            #     strong_augs.append(inputs_s)
+            #     weak_augs.append(inputs_w)
+            #     if num == unlabeled_trainloader.batch_size:
+            #         inputs_u_w = torch.cat(weak_augs)
+            #         inputs_u_s = torch.cat(strong_augs)
+            #         break
+            #     ood_mask_reverse = ood_mask.eq(False)
+            #     inds_reverse = torch.arange(0, ood_mask.shape[0]).masked_select(ood_mask_reverse)
+            #     img = img[inds_reverse]
+
+            #
+            #     inputs_u_w, inputs_u_s = tf(img)
+
+            # ======= OOD
+            scores = ood_score.OODAUC(ood_model, inputs_u_s, args)
+            ood_mask = scores.le(args.ood_threshold)  # 448
+            for i in range(448):
+                if not ood_mask[i]:
+                    inputs_u_s[i] = generate_strong_aug(args, img[i], tf, ood_model)
+
+
+
+
 
             data_time.update(time.time() - end)
             batch_size = inputs_x.shape[0]
